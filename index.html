@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio | Cyber Security Architect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { 
+            background-color: #0f172a;
+            color: #f8fafc; 
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        #bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-color: #0f172a; 
+            overflow: hidden;
+        }
+
+        #bg-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .accent-border { border-left: 4px solid #38bdf8; }
+        
+        /* Garante que o conteúdo fique acima do canvas */
+        main, header, footer { position: relative; z-index: 1; }
+
+        @keyframes neonPulse {
+            0%, 100% { filter: drop-shadow(0 0 15px rgba(56, 189, 248, 0.6)); }
+            50% { filter: drop-shadow(0 0 30px rgba(56, 189, 248, 0.9)); }
+        }
+
+        .animate-neon-glow {
+            animation: neonPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes letterWave {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-2px) rotate(-2deg); }
+            75% { transform: translateY(2px) rotate(2deg); }
+        }
+
+        .char-wave {
+            display: inline-block;
+            transform-origin: center;
+            transition: color 0.3s ease;
+        }
+
+        .group:hover .char-wave {
+            animation: letterWave 0.5s ease-in-out infinite;
+        }
+
+        @keyframes moveLeft {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        @keyframes moveRight {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+        }
+
+        /* Estilos adicionais para o bloco isolado do Captcha */
+        .captcha-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a; display: flex; justify-content: center; align-items: center; z-index: 999999; }
+        .captcha-container { background: #1e293b; padding: 24px; border-radius: 16px; border: 1px solid rgba(56, 189, 248, 0.2); box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; width: 340px; }
+        .canvas-area { position: relative; width: 292px; height: 155px; background-size: cover; border-radius: 8px; overflow: hidden; margin: 0 auto; }
+        .target { position: absolute; width: 45px; height: 45px; background: rgba(15, 23, 42, 0.75); border: 2px dashed #38bdf8; top: 55px; border-radius: 6px; }
+        .piece { position: absolute; width: 45px; height: 45px; top: 55px; left: 0; border: 2px solid #38bdf8; box-shadow: 0 0 12px rgba(56,189,248,0.5); background-size: 292px 155px; border-radius: 6px; }
+        .slider-container { margin-top: 24px; width: 100%; }
+        .slider { width: 100%; height: 10px; border-radius: 9999px; background: #0f172a; outline: none; -webkit-appearance: none; cursor: pointer; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #38bdf8; cursor: grab; box-shadow: 0 0 10px rgba(56,189,248,0.6); transition: background 0.2s; }
+        .slider::-webkit-slider-thumb:active { cursor: grabbing; background: #f8fafc; }
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <div id="captcha-box" class="captcha-screen">
+        <div class="captcha-container">
+            <h3 style="margin-top:0; margin-bottom: 16px; color:#38bdf8; font-weight: bold; font-family: system-ui, sans-serif;">Security Check</h3>
+            <p style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 16px;">Drag the slider to fit the puzzle.</p>
+            <div id="canvas" class="canvas-area">
+                <div id="target" class="target"></div>
+                <div id="piece" class="piece"></div>
+            </div>
+            <div class="slider-container">
+                <input type="range" id="slider" class="slider" min="0" max="245" value="0">
+            </div>
+            <p id="status" style="color:#64748b; font-size: 0.875rem; font-weight:bold; margin-top: 16px;">Waiting for action...</p>
+        </div>
+    </div>
+
+    <div id="conteudo-site" style="display: none;">
+
+        <div id="bg-animation">
+            <canvas id="bg-canvas"></canvas>
+        </div>
+
+        <header class="relative w-full max-w-5xl mx-auto pt-8 px-4">
+            <div class="rounded-2xl overflow-hidden shadow-2xl border border-slate-700 animate-neon-glow grid grid-rows-3 h-[240px] md:h-[320px]">
+                
+                <div class="w-full h-full overflow-hidden relative flex">
+                    <div class="flex absolute top-0 h-full w-[200%] animate-[moveRight_35s_linear_infinite]">
+                        <div class="flex w-1/2 h-full">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMmt4em53aXRmNjFvN3cxYWl4YWdwcGQycngxdjhrZnhzMmdiaHF1YSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/sRFEa8lbeC7zbcIZZR/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExOW9hNGJ0ZDg4aWprZWx6Mms5M3NkcGlzajZieGJpaXd6MDZhbXNhNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26FL0ydLDEcARWY0g/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExc2h4aDk0bmlqYjF3djA3NHF2dWIxNW82YXNuMnlqdGs5a2FjenJsbCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/LR5ZBwZHv02lmpVoEU/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcGExZ2V2ZmI4dGh0emd5am5nNGdjeHdsYWo0a3czOG92Zmp2c3RtMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/udK21RQeWtaGQ/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHloNm8zbWM1Y2E1dDFrbjg4emhhYjIzMG5kdWR1NzE5ajhtY3NtayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3q2XB76CaWPggiNW/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZDExNXozd3ZnYzk4ZDBrcXFneW91bXNnZXNwajlmaWF4OWMwaHIzeSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/bCGprIVfJ6m8wLkhmt/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZTlqMzhud2dyZTJkYmJ3MGp2YmhmdWRudmFzZzI5cGUwNjJxcWwycSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Ud8TdUPuo43ktL8tAE/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                        </div>
+                        <div class="flex w-1/2 h-full">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExMmt4em53aXRmNjFvN3cxYWl4YWdwcGQycngxdjhrZnhzMmdiaHF1YSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/sRFEa8lbeC7zbcIZZR/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExOW9hNGJ0ZDg4aWprZWx6Mms5M3NkcGlzajZieGJpaXd6MDZhbXNhNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26FL0ydLDEcARWY0g/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExc2h4aDk0bmlqYjF3djA3NHF2dWIxNW82YXNuMnlqdGs5a2FjenJsbCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/LR5ZBwZHv02lmpVoEU/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcGExZ2V2ZmI4dGh0emd5am5nNGdjeHdsYWo0a3czOG92Zmp2c3RtMiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/udK21RQeWtaGQ/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHloNm8zbWM1Y2E1dDFrbjg4emhhYjIzMG5kdWR1NzE5ajhtY3NtayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3q2XB76CaWPggiNW/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZDExNXozd3ZnYzk4ZDBrcXFneW91bXNnZXNwajlmaWF4OWMwaHIzeSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/bCGprIVfJ6m8wLkhmt/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExZTlqMzhud2dyZTJkYmJ3MGp2YmhmdWRudmFzZzI5cGUwNjJxcWwycSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Ud8TdUPuo43ktL8tAE/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full h-full overflow-hidden relative flex">
+                    <div class="flex absolute top-0 h-full w-[200%] animate-[moveLeft_35s_linear_infinite]">
+                        <div class="flex w-1/2 h-full">
+                            <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExdWFuN3Q4eXY1OW44aGIwOGVsZ283OXJvNHJxcjd0azU2N2s1emx0NyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ox91VuRSYDxKkQF3zf/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcTN3b3A1djIzNWF4N3gzZjg1eTl5aXEyODM5MnVmenZveGNwbnRnNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lnfzT3k8g7wpG/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExaDVmZW4zemlsbzlrOG9iemxia3V0bTNuaW1rMTY2ajV6NzNxcDRmZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/SbdrXHzWCKKOAug9hL/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExbHp0OHdxcDVnazA0czQycjlwdWhlaTM2b3llMzg1dHd2aG8ydXFxcCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/10PNyg7YOcaBQA/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExaGc3eXB0YzExMHpncG1vZ2RuZzlvcm9oOGQxcWx6c3lpZGQ0cHFiciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jtXRDVzaCPXSynUz7h/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExcjlkNnBxbjV3OTh1dnNwNjVud3k3dDJjY2l5YXk3MHhwM2NyeGQ3cSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/QrLlkjnfibr4EgcYCY/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdDh1MGdqY3g4OG92bHU5aWhqNnYzdjZqeDgydHJldzR4aDJoM3FzNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/KX5nwoDX97AtPvKBF6/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                        </div>
+                        <div class="flex w-1/2 h-full">
+                            <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExdWFuN3Q4eXY1OW44aGIwOGVsZ283OXJvNHJxcjd0azU2N2s1emx0NyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ox91VuRSYDxKkQF3zf/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcTN3b3A1djIzNWF4N3gzZjg1eTl5aXEyODM5MnVmenZveGNwbnRnNiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/lnfzT3k8g7wpG/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExaDVmZW4zemlsbzlrOG9iemxia3V0bTNuaW1rMTY2ajV6NzNxcDRmZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/SbdrXHzWCKKOAug9hL/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExbHp0OHdxcDVnazA0czQycjlwdWhlaTM2b3llMzg1dHd2aG8ydXFxcCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/10PNyg7YOcaBQA/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExaGc3eXB0YzExMHpncG1vZ2RuZzlvcm9oOGQxcWx6c3lpZGQ0cHFiciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/jtXRDVzaCPXSynUz7h/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExcjlkNnBxbjV3OTh1dnNwNjVud3k3dDJjY2l5YXk3MHhwM2NyeGQ3cSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/QrLlkjnfibr4EgcYCY/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExdDh1MGdqY3g4OG92bHU5aWhqNnYzdjZqeDgydHJldzR4aDJoM3FzNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/KX5nwoDX97AtPvKBF6/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="w-full h-full overflow-hidden relative flex">
+                    <div class="flex absolute top-0 h-full w-[200%] animate-[moveRight_35s_linear_infinite]">
+                        <div class="flex w-1/2 h-full">
+                            <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExaWRwcTMxdHQzZHhxaDRwbndhZjludzMxbnZkZDF4bGZzNTlpZ3p4dSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/GnsG8tdfE5OwVNAO8b/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDZ4Njc3bXljN3ptNDl4dzM3MXhjMnZtMGplemhjZWszNzh3cXJmMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/9zExs2Q2h1EHfE4P6G/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHM3M3dlaG5ja3lrMGNybTQ0enV1ODBtM3drdGt0eGVjY2hwZ2R2YiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/zyFcsWHX2fdpyb5SBi/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExbTZ5Y295dGc5bnp5Z2h3bWlwbm4wc2p0NmY3ZTBuZnplN3dodDRyNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l4JyNNqiVzBMbDOVO/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExeWdxZG42NHJheHNjcmhqdWIxb2I0aWxpMGx6M2U1OTN0eGdxb2M0diZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/oOxSXI5D2cvc6kYSvw/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExNnFybmw2bHR6YmRndGNobmowN2NrbGx1ajZ1cWdhYm16dHNobmh2aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/T3cG4taxiqAOZ7JzoE/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcnYyd3Z1aXdjMzNxa3gzYWppdGszbWR6ZWw0djYxNXF0dTBmcjlpdiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/6tgQPf7z3c1rkqWxYM/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                        </div>
+                        <div class="flex w-1/2 h-full">
+                            <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExaWRwcTMxdHQzZHhxaDRwbndhZjludzMxbnZkZDF4bGZzNTlpZ3p4dSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/GnsG8tdfE5OwVNAO8b/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDZ4Njc3bXljN3ptNDl4dzM3MXhjMnZtMGplemhjZWszNzh3cXJmMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/9zExs2Q2h1EHfE4P6G/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHM3M3dlaG5ja3lrMGNybTQ0enV1ODBtM3drdGt0eGVjY2hwZ2R2YiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/zyFcsWHX2fdpyb5SBi/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExbTZ5Y295dGc5bnp5Z2h3bWlwbm4wc2p0NmY3ZTBuZnplN3dodDRyNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l4JyNNqiVzBMbDOVO/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExeWdxZG42NHJheHNjcmhqdWIxb2I0aWxpMGx6M2U1OTN0eGdxb2M0diZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/oOxSXI5D2cvc6kYSvw/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExNnFybmw2bHR6YmRndGNobmowN2NrbGx1ajZ1cWdhYm16dHNobmh2aCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/T3cG4taxiqAOZ7JzoE/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                            <img src="https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExcnYyd3Z1aXdjMzNxa3gzYWppdGszbWR6ZWw0djYxNXF0dTBmcjlpdiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/6tgQPf7z3c1rkqWxYM/giphy.gif" alt="Banner" class="w-[14.285%] h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </header>
+
+        <main class="max-w-5xl mx-auto p-4 md:p-8 space-y-12">
+            
+            <section class="text-center space-y-4">
+                <h1 class="text-4xl md:text-5xl font-bold text-sky-400">Welcome to my GitHub!</h1>
+                <p class="text-xl md:text-2xl font-light leading-relaxed max-w-4xl mx-auto text-slate-300">
+                    I'm a <span class="text-white font-semibold">Cyber Security Architect</span>, with a focus on Cloud, Network, Container and Linux Security. Over 20 years of experience implementing solutions in critical and complex environments.
+                </p>
+            </section>
+
+            <div class="tech-redirect-container">
+        
+                <a href="https://www.bleepingcomputer.com/" target="_blank" rel="noopener noreferrer" class="tech-icon-link" title="Acesse o BleepingComputer">
+                    <i class="fas fa-shield-alt"></i>
+                    <span class="tech-icon-text">Cyber Security</span>
+                </a>
+
+                <a href="https://www.linux.org" target="_blank" rel="noopener noreferrer" class="tech-icon-link" title="Acesse o Portal Linux">
+                    <i class="fab fa-linux"></i>
+                    <span class="tech-icon-text">Linux</span>
+                </a>
+
+                <a href="https://kubernetes.io/blog/" target="_blank" rel="noopener noreferrer" class="tech-icon-link" title="Acesse o Blog do Kubernetes">
+                    <i class="fas fa-dharmachakra"></i>
+                    <span class="tech-icon-text">Kubernetes</span>
+                </a>
+
+                <a href="https://www.cloudcomputing-news.net" target="_blank" rel="noopener noreferrer" class="tech-icon-link" title="Acesse Cloud Computing News">
+                    <i class="fas fa-cloud"></i>
+                    <span class="tech-icon-text">Cloud News</span>
+                </a>
+
+                <a href="https://www.developer-tech.com" target="_blank" rel="noopener noreferrer" class="tech-icon-link" title="Acesse Developer Tech">
+                    <i class="fas fa-cogs"></i>
+                    <span class="tech-icon-text">Development</span>
+                </a>
+
+            </div>
+
+            <style>
+                .tech-redirect-container {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 35px; 
+                    margin: 30px auto;
+                    padding: 15px;
+                    width: 100%;
+                    max-width: 1200px;
+                    flex-wrap: wrap; 
+                }
+
+                .tech-icon-link {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-decoration: none;
+                    color: #007bff; 
+                    transition: transform 0.3s ease, color 0.3s ease;
+                    font-family: system-ui, -apple-system, sans-serif;
+                    min-width: 110px; 
+                    text-align: center;
+                }
+
+                .tech-icon-link i {
+                    font-size: 3rem; 
+                    margin-bottom: 10px;
+                }
+
+                .tech-icon-text {
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                }
+
+                .tech-icon-link:hover {
+                    transform: scale(1.1);
+                    color: #0056b3;
+                }
+            </style>
+
+            <hr class="border-slate-800">
+
+            <div class="grid md:grid-cols-2 gap-12">
+                
+                <section class="space-y-6">
+                    <h3 class="text-2xl font-bold flex items-center gap-3">
+                        <i class="fas fa-briefcase text-sky-500"></i> Positions
+                    </h3>
+                    <div class="ml-4 border-l border-slate-700 space-y-8 relative">
+                        
+                        <div class="group relative pl-6 cursor-default">
+                            <div class="absolute -left-[6.5px] top-[6px] w-3 h-3 rounded-full bg-[#38bdf8] shadow-[0_0_10px_#38bdf8] transition-all duration-300 group-hover:scale-125 group-hover:bg-sky-100 group-hover:shadow-[0_0_22px_5px_#38bdf8]"></div>
+                            <h4 class="font-bold text-sky-300 transition-colors duration-300 group-hover:text-sky-200 text-target">Cyber Security Architect</h4>
+                            <p class="text-sm text-slate-400">2024 &rarr; Present</p>
+                        </div>
+                        
+                        <div class="group relative pl-6 cursor-default">
+                            <div class="absolute -left-[6.5px] top-[6px] w-3 h-3 rounded-full bg-[#38bdf8] shadow-[0_0_10px_#38bdf8] transition-all duration-300 group-hover:scale-125 group-hover:bg-sky-100 group-hover:shadow-[0_0_22px_5px_#38bdf8]"></div>
+                            <h4 class="font-bold text-slate-200 transition-colors duration-300 group-hover:text-white text-target">Cyber Security Engineer - Tech Lead</h4>
+                            <p class="text-sm text-slate-400 font-medium italic">Blue Team</p>
+                            <p class="text-sm text-slate-500">2022 &rarr; 2024</p>
+                        </div>
+                        
+                        <div class="group relative pl-6 cursor-default">
+                            <div class="absolute -left-[6.5px] top-[6px] w-3 h-3 rounded-full bg-[#38bdf8] shadow-[0_0_10px_#38bdf8] transition-all duration-300 group-hover:scale-125 group-hover:bg-sky-100 group-hover:shadow-[0_0_22px_5px_#38bdf8]"></div>
+                            <h4 class="font-bold text-slate-200 transition-colors duration-300 group-hover:text-white text-target">Cyber Security Engineer - Cloud Security</h4>
+                            <p class="text-sm text-slate-400 font-medium italic">Blue Team</p>
+                            <p class="text-sm text-slate-500">2021 &rarr; 2022</p>
+                        </div>
+                        
+                        <div class="group relative pl-6 cursor-default">
+                            <div class="absolute -left-[6.5px] top-[6px] w-3 h-3 rounded-full bg-[#38bdf8] shadow-[0_0_10px_#38bdf8] transition-all duration-300 group-hover:scale-125 group-hover:bg-sky-100 group-hover:shadow-[0_0_22px_5px_#38bdf8]"></div>
+                            <h4 class="font-bold text-slate-200 transition-colors duration-300 group-hover:text-white text-target">DevOps Specialist</h4>
+                            <p class="text-sm text-slate-500">2019 &rarr; 2021</p>
+                        </div>
+                        
+                        <div class="group relative pl-6 text-slate-400 cursor-default">
+                            <div class="absolute -left-[6.5px] top-[6px] w-3 h-3 rounded-full bg-[#38bdf8] shadow-[0_0_10px_#38bdf8] transition-all duration-300 group-hover:scale-125 group-hover:bg-sky-100 group-hover:shadow-[0_0_22px_5px_#38bdf8]"></div>
+                            <h4 class="font-semibold transition-colors duration-300 group-hover:text-slate-200 text-target">Previous Roles</h4>
+                            <p class="text-xs">DevOps Engineer, Systems Analyst, Support Analyst (2005 - 2019)</p>
+                        </div>
+
+                    </div>
+                </section>
+
+                <section class="space-y-6">
+                    <h3 class="text-2xl font-bold flex items-center gap-3">
+                        <i class="fas fa-certificate text-sky-500"></i> Best Courses / Certificates
+                    </h3>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none custom-accordion">
+                            <div class="p-4 flex justify-between items-center accordion-header">
+                                <p class="text-slate-200 font-medium text-target">Associate Cloud Engineer / GCP</p>
+                                <span class="text-slate-400 transition-transform duration-500 accordion-arrow">▼</span>
+                            </div>
+                            <div class="accordion-content max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                                <p class="px-4 pb-4 pt-1 text-slate-400 text-sm transition-colors group-hover:text-slate-300">
+                                    Validates the ability to deploy applications, monitor operations, and manage enterprise solutions on Google Cloud Platform.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none custom-accordion">
+                            <div class="p-4 flex justify-between items-center accordion-header">
+                                <p class="text-slate-200 font-medium text-target">EXIN Ethical Hacking & CompTIA PenTest+</p>
+                                <span class="text-slate-400 transition-transform duration-500 accordion-arrow">▼</span>
+                            </div>
+                            <div class="accordion-content max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                                <p class="px-4 pb-4 pt-1 text-slate-400 text-sm transition-colors group-hover:text-slate-300">
+                                    Covers advanced vulnerability assessment, penetration testing methodologies, and ethical hacking techniques to secure infrastructure.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none custom-accordion">
+                            <div class="p-4 flex justify-between items-center accordion-header">
+                                <p class="text-slate-200 font-medium text-target">ICSI | CNSS Certified Network Security Specialist</p>
+                                <span class="text-slate-400 transition-transform duration-500 accordion-arrow">▼</span>
+                            </div>
+                            <div class="accordion-content max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                                <p class="px-4 pb-4 pt-1 text-slate-400 text-sm transition-colors group-hover:text-slate-300">
+                                    Focuses on network security foundations, covering firewalls, encryption, protocols, and defense strategies against cyber threats.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none custom-accordion">
+                            <div class="p-4 flex justify-between items-center accordion-header">
+                                <p class="text-slate-200 font-medium text-target">Linux Professional Institute / LPI 101</p>
+                                <span class="text-slate-400 transition-transform duration-500 accordion-arrow">▼</span>
+                            </div>
+                            <div class="accordion-content max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                                <p class="px-4 pb-4 pt-1 text-slate-400 text-sm transition-colors group-hover:text-slate-300">
+                                    Certifies core system administration skills, including Linux command line, architecture, installation, and package management.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="group mt-8 p-6 rounded-xl bg-gradient-to-br from-slate-800 to-slate-900 border border-sky-900/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <h4 class="text-sky-400 font-bold mb-3 flex items-center gap-2 text-target">
+                            <i class="fas fa-robot"></i> Recent Technical Focus
+                        </h4>
+                        <ul class="text-sm space-y-2 text-slate-300">
+                            <li>• ROS2 Advanced Concepts (Level 3)</li>
+                            <li>• ROS2 TF / URDF / RViz / Gazebo (Level 2)</li>
+                            <li>• Robot Operating System 2 (Level 1)</li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+
+            <hr class="border-slate-800">
+
+            <section class="space-y-6">
+                <h3 class="text-2xl font-bold flex items-center gap-3">
+                    <i class="fas fa-cubes text-sky-500"></i> Technical Expertise
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none accordion-skills">
+                    <div class="p-3 flex justify-between items-center header-skills">
+                        <p class="text-sky-400 text-target font-bold">Cyber Security</p>
+                        <span class="text-slate-400 transition-transform duration-500 arrow-skills">▼</span>
+                    </div>
+                    <div class="content-skills max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                        <p class="px-3 pb-3 text-slate-300">Cyber Security Architecture for cloud and microservice environments.</p>
+                    </div>
+                </div>
+
+                <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none accordion-skills">
+                    <div class="p-3 flex justify-between items-center header-skills">
+                        <p class="text-sky-400 text-target font-bold">Cloud Computing</p>
+                        <span class="text-slate-400 transition-transform duration-500 arrow-skills">▼</span>
+                    </div>
+                    <div class="content-skills max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                        <p class="px-3 pb-3 text-slate-300">AWS, GCP, Azure, and OCI</p>
+                    </div>
+                </div>
+
+                <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none accordion-skills">
+                    <div class="p-3 flex justify-between items-center header-skills">
+                        <p class="text-sky-400 text-target font-bold">Containers & Orchestration</p>
+                        <span class="text-slate-400 transition-transform duration-500 arrow-skills">▼</span>
+                    </div>
+                    <div class="content-skills max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                        <p class="px-3 pb-3 text-slate-300">Docker, Kubernetes, Rancher, ECS, EKS, GKE, and OKE.</p>
+                    </div>
+                </div>
+
+                <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none accordion-skills">
+                    <div class="p-3 flex justify-between items-center header-skills">
+                        <p class="text-sky-400 text-target font-bold">CI/CD & DevOps</p>
+                        <span class="text-slate-400 transition-transform duration-500 arrow-skills">▼</span>
+                    </div>
+                    <div class="content-skills max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                        <p class="px-3 pb-3 text-slate-300">Jenkins, GitLab CI, SonarQube, Nexus, and JFrog Artifactory.</p>
+                    </div>
+                </div>
+
+                <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none accordion-skills">
+                    <div class="p-3 flex justify-between items-center header-skills">
+                        <p class="text-sky-400 text-target font-bold">Infrastructure as Code & Automation</p>
+                        <span class="text-slate-400 transition-transform duration-500 arrow-skills">▼</span>
+                    </div>
+                    <div class="content-skills max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                        <p class="px-3 pb-3 text-slate-300">Ansible, Terraform, Puppet, and Foreman.</p>
+                    </div>
+                </div>
+
+                <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none accordion-skills">
+                    <div class="p-3 flex justify-between items-center header-skills">
+                        <p class="text-sky-400 text-target font-bold">Infrastructure & OS</p>
+                        <span class="text-slate-400 transition-transform duration-500 arrow-skills">▼</span>
+                    </div>
+                       <div class="content-skills max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                        <p class="px-3 pb-3 text-slate-300">Network and Linux Servers management (Debian, Ubuntu, CentOS, Red Hat).</p>
+                    </div>
+                </div>
+
+                <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none accordion-skills">
+                    <div class="p-3 flex justify-between items-center header-skills">
+                        <p class="text-sky-400 text-target font-bold">OpenStack Structure</p>
+                        <span class="text-slate-400 transition-transform duration-500 arrow-skills">▼</span>
+                     </div>
+                    <div class="content-skills max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                        <p class="px-3 pb-3 text-slate-300">Implementation, management and image preparation (Linux/Windows) for OpenStack.</p>
+                    </div>
+                </div>
+
+                <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none accordion-skills">
+                    <div class="p-3 flex justify-between items-center header-skills">
+                        <p class="text-sky-400 text-target font-bold">Monitoring & Observability</p>
+                        <span class="text-slate-400 transition-transform duration-500 arrow-skills">▼</span>
+                     </div>
+                    <div class="content-skills max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                        <p class="px-3 pb-3 text-slate-300">Grafana, Prometheus, Graylog, Nagios and Netdata systems.</p>
+                    </div>
+                </div>
+
+                <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none accordion-skills">
+                    <div class="p-3 flex justify-between items-center header-skills">
+                        <p class="text-sky-400 text-target font-bold">Programming</p>
+                    <span class="text-slate-400 transition-transform duration-500 arrow-skills">▼</span>
+                    </div>
+                    <div class="content-skills max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                        <p class="px-3 pb-3 text-slate-300">Python and Shell Script development.</p>
+                    </div>
+                </div>
+
+                <div class="group glass rounded-lg accent-border transform hover:scale-[1.02] transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer select-none accordion-skills">
+                    <div class="p-3 flex justify-between items-center header-skills">
+                        <p class="text-sky-400 text-target font-bold">Version Control</p>
+                        <span class="text-slate-400 transition-transform duration-500 arrow-skills">▼</span>
+                    </div>
+                    <div class="content-skills max-h-0 overflow-hidden transition-all duration-700 ease-in-out opacity-0">
+                        <p class="px-3 pb-3 text-slate-300">Git, GitHub, Bitbucket and GitLab.</p>
+                    </div>
+                </div>
+            </div>
+            </section>
+
+            <hr class="border-slate-800">
+
+            <section class="space-y-6 pb-12">
+                <h3 class="text-2xl font-bold flex items-center gap-3">
+                    <i class="fas fa-graduation-cap text-sky-500"></i> Education & Specialized Courses
+                </h3>
+                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2026</span>
+                        <p class="text-slate-300 text-target">ROS2 for Beginners Level 3 - Advanced Concepts</p>
+                    </div>
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2026</span>
+                        <p class="text-slate-300 text-target">ROS2 for Beginners Level 2 - TF / URDF / RViz / Gazebo</p>
+                    </div>
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2026</span>
+                        <p class="text-slate-300 text-target">ROS2 for Beginners Level 1 - Robot Operating System 2</p>
+                    </div>
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2020</span>
+                        <p class="text-slate-300 text-target">Clavis Academy - Ethical Hacking & PenTest+</p>
+                    </div>
+                     <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2020</span>
+                        <p class="text-slate-300 text-target">ICSI | CNSS Certified Network Security Specialist</p>
+                    </div>
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2019</span>
+                        <p class="text-slate-300 text-target">Google Certified Associate Cloud Engineer</p>
+                    </div>
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2017</span>
+                        <p class="text-slate-300 text-target">Google Cloud Platform</p>
+                    </div>
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2014</span>
+                        <p class="text-slate-300 text-target">Nagios Essential by Tempo Real Eventos</p>
+                    </div>
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2013</span>
+                        <p class="text-slate-300 text-target">Linux Server Security - 4Linux</p>
+                    </div>
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2010</span>
+                        <p class="text-slate-300 text-target">Computer Networks - Paulista Module College (FIAP)</p>
+                    </div>
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2006</span>
+                        <p class="text-slate-300 text-target">Complete Linux course by Impacta Tecnologias</p>
+                    </div>
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono">2001</span>
+                        <p class="text-slate-300 text-target">MCSE Windows Server 2000 - Impacta Tecnologias</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-6 pb-12">
+                <h3 class="text-2xl font-bold flex items-center gap-3">
+                    <i class="fab fa-github text-sky-500"></i> Repositories
+                </h3>
+                <div class="relative h-[500px] w-full flex items-center justify-center overflow-hidden bg-slate-950/30 rounded-2xl border border-slate-800/50">
+                    <svg class="absolute inset-0 w-full h-full pointer-events-none" id="branch-svg">
+                    </svg>
+                    <button id="main-branch" class="z-20 p-6 bg-slate-900 border-2 border-sky-500 rounded-full hover:scale-110 active:scale-95 transition-transform shadow-[0_0_30px_rgba(14,165,233,0.4)]">
+                        <i class="fab fa-github text-4xl text-sky-500"></i>
+                    </button>
+                    <div class="branch-container absolute inset-0 flex items-center justify-center pointer-events-none">  
+                        <div class="branch-item absolute opacity-0 scale-0 transition-all duration-500 ease-out" data-angle="0" data-dist="200">
+                            <a href="https://github.com/chahadtecnologia/Linux" target="_blank" class="p-3 border border-sky-500/30 bg-slate-900 rounded-lg text-xs text-slate-300 hover:border-sky-500 hover:text-white block flex items-center gap-2 pointer-events-auto shadow-lg transform hover:scale-[1.05] duration-300">
+                                <i class="fab fa-linux text-sky-500"></i> Linux
+                            </a>
+                        </div>
+                         <div class="branch-item absolute opacity-0 scale-0 transition-all duration-500 ease-out" data-angle="45" data-dist="200">
+                            <a href="https://github.com/chahadtecnologia/ROS2" target="_blank" class="p-3 border border-sky-500/30 bg-slate-900 rounded-lg text-xs text-slate-300 hover:border-sky-500 hover:text-white block flex items-center gap-2 pointer-events-auto shadow-lg transform hover:scale-[1.05] duration-300">
+                                <i class="fas fa-robot text-sky-500"></i> ROS2
+                            </a>
+                        </div>
+                        <div class="branch-item absolute opacity-0 scale-0 transition-all duration-500 ease-out" data-angle="90" data-dist="200">
+                            <a href="https://github.com/chahadtecnologia/Rust" target="_blank" class="p-3 border border-sky-500/30 bg-slate-900 rounded-lg text-xs text-slate-300 hover:border-sky-500 hover:text-white block flex items-center gap-2 pointer-events-auto shadow-lg transform hover:scale-[1.05] duration-300">
+                                <i class="fab fa-rust text-sky-500"></i> Rust
+                            </a>
+                        </div>
+                        <div class="branch-item absolute opacity-0 scale-0 transition-all duration-500 ease-out" data-angle="135" data-dist="200">
+                            <a href="https://github.com/chahadtecnologia/eBPF" target="_blank" class="p-3 border border-sky-500/30 bg-slate-900 rounded-lg text-xs text-slate-300 hover:border-sky-500 hover:text-white block flex items-center gap-2 pointer-events-auto shadow-lg transform hover:scale-[1.05] duration-300">
+                                <i class="fab fa-linux text-sky-500"></i> eBPF
+                            </a>
+                        </div>
+                        <div class="branch-item absolute opacity-0 scale-0 transition-all duration-500 ease-out" data-angle="180" data-dist="200">
+                            <a href="https://github.com/chahadtecnologia/Vagrant" target="_blank" class="p-3 border border-sky-500/30 bg-slate-900 rounded-lg text-xs text-slate-300 hover:border-sky-500 hover:text-white block flex items-center gap-2 pointer-events-auto shadow-lg transform hover:scale-[1.05] duration-300">
+                                <i class="fas fa-server text-sky-500"></i> Vagrant
+                            </a>
+                        </div>
+                        <div class="branch-item absolute opacity-0 scale-0 transition-all duration-500 ease-out" data-angle="225" data-dist="200">
+                            <a href="https://github.com/chahadtecnologia/CompTIA" target="_blank" class="p-3 border border-sky-500/30 bg-slate-900 rounded-lg text-xs text-slate-300 hover:border-sky-500 hover:text-white block flex items-center gap-2 pointer-events-auto shadow-lg transform hover:scale-[1.05] duration-300">
+                                <i class="fas fa-shield-alt text-sky-500"></i> CompTIA
+                            </a>
+                        </div>
+                        <div class="branch-item absolute opacity-0 scale-0 transition-all duration-500 ease-out" data-angle="270" data-dist="200">
+                            <a href="https://github.com/chahadtecnologia" target="_blank" class="p-3 border border-sky-500/30 bg-slate-900 rounded-lg text-xs text-slate-300 hover:border-sky-500 hover:text-white block flex items-center gap-2 pointer-events-auto shadow-lg transform hover:scale-[1.05] duration-300">
+                                <i class="fas fa-code text-sky-500"></i> Chahad Tec
+                            </a>
+                        </div>
+                        <div class="branch-item absolute opacity-0 scale-0 transition-all duration-500 ease-out" data-angle="315" data-dist="200">
+                            <a href="https://github.com/chahadtecnologia?tab=repositories" target="_blank" class="p-3 border border-sky-500/30 bg-slate-900 rounded-lg text-xs text-slate-300 hover:border-sky-500 hover:text-white block flex items-center gap-2 pointer-events-auto shadow-lg transform hover:scale-[1.05] duration-300">
+                                <i class="fas fa-boxes text-sky-500"></i> All Repos
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-6 pb-12">
+                <h3 class="text-2xl font-bold flex items-center gap-3">
+                    <i class="fas fa-music text-sky-500"></i> Hobby
+                </h3>
+                <div class="grid md:grid-cols-2 gap-4 text-sm">
+                    <div class="group p-4 border border-slate-800 rounded-lg hover:bg-slate-800/50 transform hover:scale-[1.02] transition-all duration-300">
+                        <span class="text-sky-500 font-mono"><a href="https://soundcloud.com/magus-beats-music" target="_blank">Music</a></span>
+                        <p class="text-slate-300 text-target">MaGus Beats</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="text-center p-8 text-slate-500 text-sm border-t border-slate-800">
+            <p>© 2026 | Cyber Security Professional</p>
+        </footer>
+
+    </div> <script>
+        // 1. CAPTCHA LÓGICA ISOLADA (Iife)
+        (function() {
+            // Três imagens gratuitas do Unsplash com contraste tecnológico e dimensões exatas da área (292x155)
+            const imagens = [
+                'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=292&h=155&fit=crop',
+                'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=292&h=155&fit=crop',
+                'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?w=292&h=155&fit=crop'
+            ];
+
+            const canvas = document.getElementById('canvas');
+            const target = document.getElementById('target');
+            const piece = document.getElementById('piece');
+            const slider = document.getElementById('slider');
+            const statusText = document.getElementById('status');
+
+            const imgSorteada = imagens[Math.floor(Math.random() * imagens.length)];
+            // Posição randômica para o alvo (garantindo folga nas bordas)
+            const posAlvoX = Math.floor(Math.random() * (230 - 60) + 60);
+
+            canvas.style.backgroundImage = `url('${imgSorteada}')`;
+            target.style.left = posAlvoX + 'px';
+            piece.style.backgroundImage = `url('${imgSorteada}')`;
+            piece.style.backgroundPosition = `-${posAlvoX}px -55px`;
+
+            slider.addEventListener('input', () => {
+                piece.style.left = slider.value + 'px';
+            });
+
+            slider.addEventListener('change', () => {
+                const valorUsuario = parseInt(slider.value);
+                const margemErro = 5; 
+
+                if (Math.abs(valorUsuario - posAlvoX) <= margemErro) {
+                    statusText.innerText = "Success! Validating Human...";
+                    statusText.style.color = "#38bdf8";
+                    
+                    setTimeout(() => {
+                        // Desbloqueia o site original
+                        document.getElementById('captcha-box').style.display = 'none';
+                        document.getElementById('conteudo-site').style.display = 'block';
+                        
+                        // Inicializa as animações e scripts originais do portal após liberação
+                        liberarPortal();
+                    }, 800);
+                } else {
+                    statusText.innerText = "Incorrect. Try again!";
+                    statusText.style.color = "#ef4444";
+                    slider.value = 0;
+                    piece.style.left = '0px';
+                }
+            });
+        })();
+
+        // 2. INICIALIZAÇÃO DOS SCRIPTS ORIGINAIS DO SITE
+        function liberarPortal() {
+            // Inicialização do efeito char-wave nos elementos de texto
+            const targets = document.querySelectorAll('.text-target');
+            targets.forEach(target => {
+                const text = target.innerText;
+                target.innerHTML = ''; 
+                text.split('').forEach((char, index) => {
+                    const span = document.createElement('span');
+                    span.innerText = char === ' ' ? '\u00A0' : char; 
+                    span.className = 'char-wave';
+                    span.style.animationDelay = `${index * 40}ms`; 
+                    target.appendChild(span);
+                });
+            });
+
+            // Inicialização e gerenciamento do Accordion de Certificações e Skills
+            document.querySelectorAll('.custom-accordion').forEach(accordion => {
+                accordion.addEventListener('click', function() {
+                    const content = this.querySelector('.accordion-content');
+                    const arrow = this.querySelector('.accordion-arrow');
+                    const isOpen = !content.classList.contains('max-h-0');
+                    
+                    document.querySelectorAll('.accordion-content').forEach(el => {
+                        el.classList.add('max-h-0', 'opacity-0');
+                        el.style.maxHeight = '0px'; 
+                    });
+                    document.querySelectorAll('.accordion-arrow').forEach(el => el.classList.remove('rotate-180'));
+
+                    if (!isOpen) {
+                        content.classList.remove('max-h-0', 'opacity-0');
+                        content.style.maxHeight = content.scrollHeight + "px"; 
+                        arrow.classList.add('rotate-180');
+                    } else {
+                        content.style.maxHeight = '0px';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.accordion-skills').forEach(accordion => {
+                accordion.addEventListener('click', function() {
+                    const content = this.querySelector('.content-skills');
+                    const arrow = this.querySelector('.arrow-skills');
+                    const isOpen = !content.classList.contains('max-h-0');
+                        
+                    document.querySelectorAll('.content-skills').forEach(el => {
+                        el.style.maxHeight = null;
+                        el.classList.add('max-h-0', 'opacity-0');
+                    });
+                    document.querySelectorAll('.arrow-skills').forEach(el => el.classList.remove('rotate-180'));
+
+                    if (!isOpen) {
+                        content.classList.remove('max-h-0', 'opacity-0');
+                        content.style.maxHeight = content.scrollHeight + "px";
+                        arrow.classList.add('rotate-180');
+                    }
+                });
+            });
+
+            // Lógica do gráfico de branches / Repositórios do GitHub
+            const btn = document.getElementById('main-branch');
+            const items = document.querySelectorAll('.branch-item');
+            const svg = document.getElementById('branch-svg');
+            let isOpen = false;
+
+            function updateLines() {
+                svg.innerHTML = '';
+                const centerX = svg.clientWidth / 2;
+                const centerY = svg.clientHeight / 2;
+
+                items.forEach((item, i) => {
+                    const angle = item.getAttribute('data-angle');
+                    const dist = item.getAttribute('data-dist');
+                    const rad = angle * Math.PI / 180;
+                    
+                    const targetX = centerX + Math.cos(rad) * dist;
+                    const targetY = centerY + Math.sin(rad) * dist;
+
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", centerX);
+                    line.setAttribute("y1", centerY);
+                    line.setAttribute("x2", targetX);
+                    line.setAttribute("y2", targetY);
+                    line.setAttribute("stroke", "#0ea5e9");
+                    line.setAttribute("stroke-width", "1.5");
+                    line.setAttribute("stroke-dasharray", dist);
+                    line.setAttribute("stroke-dashoffset", isOpen ? "0" : dist);
+                    line.setAttribute("style", `transition: stroke-dashoffset 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 40}ms; opacity: ${isOpen ? '0.5' : '0'}`);
+                    
+                    svg.appendChild(line);
+                });
+            }
+
+            if(btn) {
+                btn.addEventListener('click', () => {
+                    isOpen = !isOpen;
+                    items.forEach((item, index) => {
+                        if (isOpen) {
+                            const angle = item.getAttribute('data-angle');
+                            const dist = item.getAttribute('data-dist');
+                            const x = Math.cos(angle * Math.PI / 180) * dist;
+                            const y = Math.sin(angle * Math.PI / 180) * dist;
+
+                            item.style.transitionDelay = `${index * 40}ms`;
+                            item.style.transform = `translate(${x}px, ${y}px) scale(1) `;
+                            item.style.opacity = '1';
+                        } else {
+                            item.style.transitionDelay = '0ms';
+                            item.style.transform = `translate(0, 0) scale(0)`;
+                            item.style.opacity = '0';
+                        }
+                    });
+                    updateLines();
+                });
+                window.addEventListener('resize', () => { if(isOpen) updateLines(); });
+            }
+
+            // Inicialização do Canvas de Fundo Animado (Partículas)
+            const canvas = document.getElementById('bg-canvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            const particleCount = 100; 
+            const connectionDistance = 120; 
+            const particleSpeed = 0.3; 
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                initParticles(); 
+            }
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.vx = (Math.random() - 0.5) * particleSpeed;
+                    this.vy = (Math.random() - 0.5) * particleSpeed;
+                    this.radius = Math.random() * 3 + 3; 
+                }
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                    if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(56, 189, 248, 0.3)'; 
+                    ctx.fill();
+                }
+            }
+
+            function initParticles() {
+                particles = [];
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push(new Particle());
+                }
+            }
+
+            function drawConnections() {
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance < connectionDistance) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            const opacity = 1 - (distance / connectionDistance);
+                            ctx.strokeStyle = `rgba(56, 189, 248, ${opacity * 0.5})`; 
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(particle => {
+                    particle.update();
+                    particle.draw();
+                });
+                drawConnections();
+                requestAnimationFrame(animate);
+            }
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas(); 
+            animate(); 
+        }
+    </script>
+</body>
+</html>
