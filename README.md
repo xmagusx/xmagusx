@@ -4,11 +4,12 @@
   </a>
 </div>
 
-# Welcome to my GitHub!
-## I'm a Cyber Security Architect, with a focus on Cloud, Network, Container and Linux Security. Over 20 years of experience implementing solutions in critical and complex environments.
+# Welcome to my GitHub Page!
+## I'm a Lead Architect, dedicated to technology governance, network perimeter security, and microservices networking. Over 20 years of experience implementing solutions in critical and complex environments.
 
 ## Positions:
-- Cyber Security Architect (2024 -> at the moment)
+- Lead Architect (2026 -> Present)
+- Cyber Security Architect (2024 -> 2026)
 - Cyber Security Engineer - Tech Lead - Blue Team (2022 -> 2024)
 - Cyber Security Engineer - Cloud Security - Blue Team (2021 -> 2022)
 - DevOps Specialist (2019 -> 2021)
